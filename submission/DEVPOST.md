@@ -7,8 +7,8 @@
 - Live judge demo: https://changelock.vercel.app
 - Source: https://github.com/mukeshkbj/changelock
 - CALL-E contribution PR: https://github.com/CALLE-AI/awesome-phone-call-agents/pull/613
-- Demo video: [add public YouTube URL]
-- CALL-E account email: [add account email]
+- Demo video: https://youtu.be/YZVS5Wi4_4M
+- CALL-E account email: mukeshkbj@gmail.com
 
 ## Inspiration
 
@@ -51,7 +51,7 @@ The public deployment introduced another constraint. Local SQLite is not reliabl
 - Confirmed, denied, unreachable, malformed, sensitive-data, and ambiguous outcomes all pass through deterministic policy code.
 - The database itself restricts payment-change status to `held`.
 - The project has 138 passing unit and integration tests, a production build, a no-secrets check, Docker verification, mobile browser QA, and a live Vercel/Turso replay-and-reset smoke test.
-- One authorized live CALL-E test reached no answer. ChangeLock correctly treated that as no proof either way and kept the request held. No retry was placed.
+- Two authorized live CALL-E tests exercised the runtime integration. One reached no answer; the second reached a person but ended after the greeting, before the verification question. ChangeLock treated neither result as proof, kept both requests held, and placed no automatic retry.
 
 ## What we learned
 

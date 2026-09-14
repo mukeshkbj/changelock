@@ -13,11 +13,15 @@
 - `calls.get` for manual refresh works, but a first-class webhook signature
   verification helper in the SDK (beyond the event type) would shorten the safe
   path further.
-- In an authorized live test, the call remained queued across several polls
-  before resolving to `failed` / no answer with an `unable_to_verify` structured
-  result and useful evidence. Clearer lifecycle guidance for queued calls and
+- In two authorized live tests, calls remained queued across several polls.
+  One resolved to `failed` / no answer; the other reached a person but ended
+  after the greeting, before the verification question. Both returned useful
+  `unable_to_verify` evidence. Clearer lifecycle guidance for queued calls and
   expected wait ranges would help operators distinguish normal delay from a
   stalled call without retrying.
+- A UK destination was reported as unsupported during testing. A prominent,
+  machine-readable country and region support matrix would let applications
+  reject unsupported destinations before an operator authorizes a call.
 - The completion_confidence score is useful as a gate input; documenting what
   "score" means (calibration, what it conditions on) would help us set
   thresholds defensibly.
