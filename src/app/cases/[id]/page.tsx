@@ -14,8 +14,8 @@ const STATE_LABEL: Record<string, string> = {
   submission_unknown: "Submission unknown",
   call_active: "Call active",
   terminal_unverified: "Terminal · unverified",
-  verification_confirmed: "Verified — vendor initiated",
-  verification_denied: "Verified — vendor did NOT initiate",
+  verification_confirmed: "Verified · vendor initiated",
+  verification_denied: "Verified · vendor did not initiate",
   needs_human: "Needs human review",
 };
 
@@ -71,22 +71,34 @@ export default async function CasePage({
     <main>
       <div className="case-head">
         <div>
-          <div className="muted mono">
-            <Link href="/">← Inbox</Link> · {detail.safeCaseCode}
+          <div className="crumb">
+            <Link href="/">Inbox</Link>
+            <span className="sep" aria-hidden="true">
+              /
+            </span>
+            <span className="mono">{detail.safeCaseCode}</span>
           </div>
           <h1>{detail.vendor.displayName}</h1>
           <span className={`state-badge ${detail.state}`}>
             {STATE_LABEL[detail.state] ?? detail.state}
           </span>
         </div>
-        <div className="held-banner">Payment change held — evidence only, never approval</div>
+        <div className="held-banner">Payment change held · evidence only, never approval</div>
       </div>
 
-      {error ? <div className="error-box">{error}</div> : null}
+      {error ? (
+        <div className="error-box" role="alert">
+          {error}
+        </div>
+      ) : null}
 
       <div className="workspace">
         <aside className="trust-rail" aria-label="Trust boundary">
+          <p className="rail-title">Trust chain</p>
           <div className="rail-stop untrusted">
+            <span className="rail-num" aria-hidden="true">
+              1
+            </span>
             <div className="rail-label">Untrusted request</div>
             <div className="rail-body">
               <div>{detail.request.contactName}</div>
@@ -100,6 +112,9 @@ export default async function CasePage({
             </div>
           </div>
           <div className="rail-stop trusted">
+            <span className="rail-num" aria-hidden="true">
+              2
+            </span>
             <div className="rail-label">Independent callback</div>
             <div className="rail-body">
               {detail.trustedContact ? (
@@ -111,7 +126,10 @@ export default async function CasePage({
                     {detail.trustedContact.source} · verified{" "}
                     {detail.trustedContact.verifiedAt.slice(0, 10)}
                   </div>
-                  <div className="dial-arrow">→ the only number ChangeLock will ever dial</div>
+                  <div className="dial-source">
+                    <span className="dial-label">Dial source</span>
+                    Vendor master · the only number ChangeLock will ever dial
+                  </div>
                 </>
               ) : (
                 <div className="empty-note">No trusted contact on vendor record</div>
@@ -119,6 +137,9 @@ export default async function CasePage({
             </div>
           </div>
           <div className="rail-stop evidence">
+            <span className="rail-num" aria-hidden="true">
+              3
+            </span>
             <div className="rail-label">Evidence only</div>
             <div className="rail-body">
               {lastDisposition ? (
@@ -162,24 +183,24 @@ export default async function CasePage({
             </div>
           </div>
 
-          <div className="panel">
-            <div className="panel-head">
-              <h2>Bounded call contract — what the agent may say</h2>
-              <span className="mono muted">
+          <details className="panel" open>
+            <summary className="panel-head">
+              <h2>Bounded call contract</h2>
+              <span className="sub mono">
                 {detail.taskVersion} · {detail.schemaVersion}
               </span>
-            </div>
+            </summary>
             <div className="panel-body">
               <div className="task-text">{detail.taskText}</div>
-              <p className="muted u-mb-0">
+              <p className="muted u-mb-0 u-mt-12">
                 The agent discloses automation, asks only whether the organization initiated the
                 change, and is forbidden from requesting bank details, credentials, or OTPs.
                 Nothing in this call approves anything.
               </p>
             </div>
-          </div>
+          </details>
 
-          <div className="panel">
+          <div className="panel panel-primary">
             <div className="panel-head">
               <h2>{LIVE_MODE ? "Run a verification call" : "Run a deterministic replay scenario"}</h2>
               <span className="mono muted">
@@ -329,9 +350,7 @@ export default async function CasePage({
                         />
                       </div>
                       <div className="btn-row">
-                        <button type="submit" className="btn-primary">
-                          Reconcile authoritative result
-                        </button>
+                        <button type="submit">Reconcile authoritative result</button>
                       </div>
                     </form>
                   ) : null}
@@ -357,7 +376,9 @@ export default async function CasePage({
                   action={`/api/cases/${detail.caseId}/reset`}
                   className="u-mt-12"
                 >
-                  <button type="submit">Reset synthetic case</button>
+                  <button type="submit" className="btn-warn">
+                    Reset synthetic case
+                  </button>
                   <div className="hint-inline">
                     demo maintenance — clears this case&apos;s call history so it can be
                     replayed; the payment change stays held
@@ -440,9 +461,12 @@ export default async function CasePage({
                 <ul className="audit-list">
                   {detail.audit.map((e, i) => (
                     <li key={i}>
-                      <span className="audit-type">{e.type}</span>{" "}
+                      <span className="audit-type">{e.type}</span>
                       <span className="audit-meta">
-                        {e.actor} · {e.createdAt} · #{e.eventHash.slice(0, 10)}
+                        <span className="mono">
+                          {e.createdAt.slice(0, 16).replace("T", " ")}
+                        </span>{" "}
+                        · {e.actor} · <span className="mono">#{e.eventHash.slice(0, 10)}</span>
                       </span>
                     </li>
                   ))}

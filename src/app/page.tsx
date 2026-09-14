@@ -29,10 +29,16 @@ export default async function InboxPage({
   return (
     <main>
       <div className="inbox-head">
-        <h1>Held payment-change requests</h1>
-        <span className="muted">
-          {rows.length} case{rows.length === 1 ? "" : "s"} · every request stays held until evidence
-          resolves
+        <div>
+          <h1>Held payment-change requests</h1>
+          <p className="mission">
+            Vendor payment-detail changes stay held until ChangeLock independently verifies the
+            requester through a trusted callback from the vendor master. Nothing here approves or
+            executes a change.
+          </p>
+        </div>
+        <span className="count-chip">
+          {rows.length} case{rows.length === 1 ? "" : "s"} · every request held
         </span>
       </div>
       {error ? (

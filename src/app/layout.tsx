@@ -9,22 +9,27 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const live = process.env.CHANGELOCK_MODE === "live";
   return (
     <html lang="en">
       <body>
-        <div className="shell">
-          <header className="topbar">
+        <header className="topbar">
+          <div className="topbar-inner">
             <div className="brand">
-              ChangeLock <span>/ accounts-payable fraud command center</span>
+              <span className="brand-mark" aria-hidden="true">
+                CL
+              </span>
+              <span className="brand-text">
+                <span className="brand-name">ChangeLock</span>
+                <span className="brand-desc">Vendor change control</span>
+              </span>
             </div>
-            <div className="mode-tag">
-              {process.env.CHANGELOCK_MODE === "live"
-                ? "Local live mode — external call enabled"
-                : "Judge replay mode — no live calls"}
+            <div className={live ? "env-badge live" : "env-badge"}>
+              {live ? "Live mode · local operator" : "Replay mode · no live calls"}
             </div>
-          </header>
-          {children}
-        </div>
+          </div>
+        </header>
+        <div className="shell">{children}</div>
       </body>
     </html>
   );
