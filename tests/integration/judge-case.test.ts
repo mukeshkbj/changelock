@@ -11,8 +11,12 @@ import { seedFixtures } from "../../src/fixtures/seed-data";
 import { createJudgeCase } from "../../src/application/create-judge-case";
 import { createPreview } from "../../src/application/create-preview";
 import { authorizeIntent } from "../../src/application/authorize-intent";
+import { dispatchCall } from "../../src/application/dispatch-call";
 import { resolveDispatchInput } from "../../src/application/resolve-dispatch-input";
-import { isResettableSyntheticCase } from "../../src/application/reset-synthetic-case";
+import {
+  isResettableSyntheticCase,
+  resetSyntheticCase,
+} from "../../src/application/reset-synthetic-case";
 import { maskPhone } from "../../src/domain/redact";
 
 let db: DbClient;
@@ -117,10 +121,46 @@ describe("createJudgeCase", () => {
     );
   });
 
-  it("is not resettable through the seeded-only synthetic reset", async () => {
+  it("is resettable once terminal, on judge_manual provenance alone", async () => {
     const caseId = await createJudgeCase(db, INPUT);
     const kase = (await getCase(db, caseId))!;
     const request = (await getChangeRequest(db, kase.changeRequestId))!;
-    expect(isResettableSyntheticCase("verification_denied", request.externalEventId)).toBe(false);
+    expect(isResettableSyntheticCase("verification_denied", request)).toBe(true);
+    expect(isResettableSyntheticCase("verification_confirmed", request)).toBe(true);
+    expect(isResettableSyntheticCase("needs_human", request)).toBe(true);
+    // Non-terminal states are still not resettable, and neither is a
+    // non-seeded non-judge request.
+    expect(isResettableSyntheticCase("needs_review", request)).toBe(false);
+    expect(
+      isResettableSyntheticCase("verification_denied", {
+        externalEventId: request.externalEventId,
+        sourceSystem: "erp_demo",
+      }),
+    ).toBe(false);
+  });
+
+  it("reset returns a terminal judge case to a replayable state", async () => {
+    const caseId = await createJudgeCase(db, INPUT);
+    const kase = (await getCase(db, caseId))!;
+
+    const preview = await createPreview(db, caseId);
+    const intent = await authorizeIntent(db, {
+      caseId,
+      typedPhrase: `VERIFY ${kase.safeCaseCode}`,
+      attestedConsentingContact: true,
+      preview,
+    });
+    await dispatchCall(db, { intentId: intent.id, scenario: "confirmed" });
+    expect((await getCase(db, caseId))!.state).toBe("verification_confirmed");
+
+    await resetSyntheticCase(db, { caseId });
+    expect((await getCase(db, caseId))!.state).toBe("needs_review");
+
+    // The normal preview flow works again after reset; request stays held.
+    await createPreview(db, caseId);
+    expect((await getCase(db, caseId))!.state).toBe("preview_ready");
+    const request = (await getChangeRequest(db, kase.changeRequestId))!;
+    expect(request.status).toBe("held");
+    expect(request.sourceSystem).toBe("judge_manual");
   });
 });

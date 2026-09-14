@@ -20,12 +20,30 @@ const RESETTABLE_STATES: ReadonlySet<CaseState> = new Set([
   "needs_human",
 ]);
 
-export function isResettableSyntheticCase(state: CaseState, externalEventId: string): boolean {
-  return RESETTABLE_STATES.has(state) && SYNTHETIC_EVENT_IDS.has(externalEventId);
+interface SyntheticProvenance {
+  externalEventId: string;
+  sourceSystem: string;
+}
+
+// Synthetic provenance = one of the seeded demo events OR any judge-created
+// case (judge_manual). Both are fictional replay-only evidence; ERP-imported
+// requests are never resettable.
+function isSyntheticProvenance(request: SyntheticProvenance): boolean {
+  return (
+    SYNTHETIC_EVENT_IDS.has(request.externalEventId) ||
+    request.sourceSystem === "judge_manual"
+  );
+}
+
+export function isResettableSyntheticCase(
+  state: CaseState,
+  request: SyntheticProvenance,
+): boolean {
+  return RESETTABLE_STATES.has(state) && isSyntheticProvenance(request);
 }
 
 // Shared-state recovery for demo environments (Turso, public deployments): a
-// terminal seeded case is cleared back to needs_review so judges can replay it.
+// terminal synthetic case is cleared back to needs_review so judges can replay it.
 // Deliberately bypasses the domain state machine — terminal states have no
 // legal outgoing transitions, and this is an operator maintenance action, not a
 // verification outcome. Never touches vendors, contacts, or the change request.
@@ -43,8 +61,8 @@ export async function resetSyntheticCase(db: Db, raw: unknown): Promise<void> {
   if (!kase) throw new Error("case not found");
   const request = await getChangeRequest(db, kase.changeRequestId);
   if (!request) throw new Error("change request missing");
-  if (!SYNTHETIC_EVENT_IDS.has(request.externalEventId)) {
-    throw new Error("only seeded synthetic cases can be reset");
+  if (!isSyntheticProvenance(request)) {
+    throw new Error("only synthetic cases can be reset");
   }
   if (!RESETTABLE_STATES.has(kase.state)) {
     throw new Error(`cannot reset in state ${kase.state}`);

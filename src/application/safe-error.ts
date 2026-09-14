@@ -23,7 +23,7 @@ const SAFE_PATTERNS: RegExp[] = [
   /^intent is not awaiting reconciliation$/,
   /^cannot escalate in state [a-z_]+$/,
   /^cannot reset in state [a-z_]+$/,
-  /^only seeded synthetic cases can be reset$/,
+  /^only synthetic cases can be reset$/,
   /^synthetic case reset is not available in live mode$/,
   /^intent does not belong to this case$/,
   /^Unexpected form fields were rejected\.$/,

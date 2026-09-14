@@ -97,11 +97,13 @@ describe("resetSyntheticCase", () => {
     await expect(resetSyntheticCase(db, { caseId: kase.id })).rejects.toThrow(/live/);
   });
 
-  it("refuses a non-seeded case", async () => {
+  it("refuses a case that is neither seeded nor judge_manual", async () => {
     const kase = await importCustom("evt-not-seeded-1");
     await runToTerminal(kase.id, kase.safeCaseCode);
     expect((await getCase(db, kase.id))!.state).toBe("verification_denied");
-    await expect(resetSyntheticCase(db, { caseId: kase.id })).rejects.toThrow(/seeded/);
+    await expect(resetSyntheticCase(db, { caseId: kase.id })).rejects.toThrow(
+      /only synthetic cases can be reset/,
+    );
     expect((await getCase(db, kase.id))!.state).toBe("verification_denied");
   });
 

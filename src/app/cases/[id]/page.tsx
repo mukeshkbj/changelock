@@ -64,9 +64,7 @@ export default async function CasePage({
       : undefined;
   const canReconcileLive = LIVE_MODE && unknownIntent?.providerMode === "live";
   const canResetSynthetic =
-    !LIVE_MODE &&
-    detail.suggestedScenario !== null &&
-    isResettableSyntheticCase(detail.state, detail.request.externalEventId);
+    !LIVE_MODE && isResettableSyntheticCase(detail.state, detail.request);
   const latestSnapshot = detail.intents.flatMap((i) => i.snapshots).at(-1);
 
   return (
@@ -361,7 +359,7 @@ export default async function CasePage({
                 >
                   <button type="submit">Reset synthetic case</button>
                   <div className="hint-inline">
-                    demo maintenance — clears this seeded case&apos;s call history so it can be
+                    demo maintenance — clears this case&apos;s call history so it can be
                     replayed; the payment change stays held
                   </div>
                 </form>
