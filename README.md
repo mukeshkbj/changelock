@@ -32,6 +32,12 @@ In a case workspace, pick a replay scenario, type the exact phrase
 flows through the same normalization, closed-schema parsing, and policy gates a
 live CALL-E result would.
 
+### Add a synthetic case
+
+Open **Add synthetic test case** on the inbox. Choose one of the fictional vendors, enter a source reference and fictional request-contact name, then provide only the claimed destination's last four digits. ChangeLock generates the event ID, timestamp, and reserved fictional callback server-side. The new request starts in `needs_review`, remains `held`, and can run through every deterministic replay outcome without placing a call.
+
+Public synthetic creation is disabled in live mode, rejects call-defining fields, and is capped at 50 manually created cases per shared demo database.
+
 ## The trust boundary
 
 - The callback number in the request is treated as **attacker-controlled** and is
