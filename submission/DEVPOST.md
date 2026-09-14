@@ -1,47 +1,76 @@
-# ChangeLock — Devpost draft
+# ChangeLock
+
+**Tagline:** Call the supplier before your company pays the scammer.
+
+## Submission links
+
+- Live judge demo: https://changelock.vercel.app
+- Source: https://github.com/mukeshkbj/changelock
+- CALL-E contribution PR: https://github.com/CALLE-AI/awesome-phone-call-agents/pull/613
+- Demo video: [add public YouTube URL]
+- CALL-E account email: [add account email]
 
 ## Inspiration
 
-Vendor bank-detail change fraud is the most expensive phone-call-shaped problem
-in business email compromise: the FBI's IC3 reports billions in annual losses,
-and the control every auditor recommends is boring — call the vendor back at the
-number you already had on file. Companies skip it because it is manual, slow, and
-awkward. ChangeLock makes that call automatic, bounded, and evidentiary.
+A vendor emails accounts payable with a routine request: “We changed banks. Send the next payment here.” If the mailbox was compromised, that small change can redirect an entire invoice run.
+
+The recommended control is simple: call the supplier using a number the company already trusted, not the number inside the change request. In practice, callbacks are manual, inconsistently recorded, and easy to skip when a payment queue is moving quickly. ChangeLock turns that control into a bounded workflow.
 
 ## What it does
 
-When an ERP emits a vendor payment-detail change request, ChangeLock:
+A normalized ERP event creates a held verification case. ChangeLock treats all contact details inside that event as attacker-controlled and resolves the callback destination only from the existing vendor-master record.
 
-1. Holds the request. Permanently — this app cannot approve anything.
-2. Treats every callback detail inside the request as attacker-controlled.
-3. Resolves the only number it will dial from the vendor master record.
-4. Shows the analyst the exact bounded call contract and masked destination.
-5. Requires an exact typed authorization phrase plus a consent attestation.
-6. Places one CALL-E call that discloses automation, states a safe case code,
-   asks only "did your organization initiate this change?", forbids bank
-   details/credentials/OTPs, and stops on refusal.
-7. Validates the result locally against a closed schema and a full gate list —
-   bindings, terminal status, identity, case code, no sensitive data, no opt-out,
-   answered question, confidence ≥ 0.70, evidence present.
-8. Records a privacy-minimized, hash-chained audit trail.
+Before a call, the analyst sees the masked destination, the source of that trusted contact, and the exact CALL-E task. The task discloses automation, states a safe case code, and asks one question: did the supplier initiate this payment-instruction change? It forbids bank details, credentials, one-time passcodes, and payment links. A real call requires an exact authorization phrase and a consent attestation.
 
-Confirmed or denied is evidence for a human — never payment authority.
+The returned result must pass local gates for call identity, intent, request hash, task and schema versions, trusted destination, completion state, supplier identity, case code, sensitive-data handling, opt-out, confidence, and supporting evidence. Missing or contradictory evidence fails closed.
+
+A confirmation never updates banking data or releases a payment. It marks the request as independently verified evidence for a human. A denial records that the person reached through the trusted supplier number said the organization did not initiate the request. Every outcome leaves the payment change held.
 
 ## How we built it
 
-Next.js App Router + strict TypeScript, direct better-sqlite3 persistence, Zod at
-external boundaries, deterministic content-bound fingerprints and idempotency
-keys, and a `CallProvider` seam with a replay provider (zero network, zero secret
-reads) and a narrow official `@call-e/calle` SDK adapter behind server-only
-`CHANGELOCK_MODE=live` plus an explicit contact allowlist.
+ChangeLock is one strict TypeScript application built with Next.js, React, Zod, SQLite-compatible persistence, and the official `@call-e/calle` SDK.
+
+The application reserves a durable intent before provider I/O. The idempotency key is derived from the approved request, trusted contact, bounded task, and schema version. If call creation becomes ambiguous, ChangeLock records `submission_unknown`, blocks redial, and allows an operator to reconcile an authoritative CALL-E call ID or escalate to human review.
+
+Judge mode uses deterministic fixtures, but those fixtures pass through the same provider mapper, closed schema, evidence policy, state machine, persistence, and audit path as live results. Public deployment is structurally replay-only. Vercel functions use a Turso database through `@tursodatabase/serverless`; local and Docker runs use `@libsql/client` with a SQLite file.
+
+The audit timeline stores masked, bounded evidence and links events by hash. It does not persist raw transcripts, complete phone numbers, bank-account numbers, routing numbers, or credentials.
+
+## Challenges
+
+The hardest problem was keeping evidence separate from authority. A plausible phone response cannot become permission to move money.
+
+Phone-call creation also has an awkward failure mode: a network timeout may happen after the provider accepted the request. Retrying could call the supplier twice. ChangeLock therefore treats an unknown submission as its own durable state and never retries automatically.
+
+The public deployment introduced another constraint. Local SQLite is not reliable across Vercel serverless requests, so we moved persistence behind an asynchronous Turso-compatible boundary and added race-safe initialization for concurrent cold starts. The public synthetic cases can be reset without touching vendor records or the permanently held change requests.
+
+## Accomplishments
+
+- The provider destination is loaded server-side from the trusted vendor-master contact; imported callback data cannot steer a call.
+- Public judge mode cannot instantiate the live CALL-E path.
+- Confirmed, denied, unreachable, malformed, sensitive-data, and ambiguous outcomes all pass through deterministic policy code.
+- The database itself restricts payment-change status to `held`.
+- The project has 138 passing unit and integration tests, a production build, a no-secrets check, Docker verification, mobile browser QA, and a live Vercel/Turso replay-and-reset smoke test.
+- One authorized live CALL-E test reached no answer. ChangeLock correctly treated that as no proof either way and kept the request held. No retry was placed.
 
 ## What we learned
 
-The hard part is not making a phone call — it is making sure nothing attacker-
-controlled can steer one, and that "the AI said it was fine" can never become an
-approval.
+Making the phone call was the easy part. The work was deciding what the call could say, proving which number controlled the dial, surviving uncertain provider acceptance, and ensuring that “the AI said yes” could never become a payment instruction.
 
-## What's next
+The useful artifact is not a transcript. It is a small piece of evidence with provenance, explicit limits, and a workflow that knows when to stop.
 
-Webhook-verified callbacks, vendor-master write-back proposals (still
-human-approved), and outcome statistics per vendor.
+## What’s next
+
+The next version would add authenticated ERP adapters, signed webhook verification, per-organization access controls, vendor-contact governance, and human-owned write-back proposals. It would still refuse to change bank details or release payments automatically.
+
+## Built with
+
+- CALL-E TypeScript SDK
+- Next.js and React
+- TypeScript
+- Zod
+- Turso Cloud and `@tursodatabase/serverless`
+- `@libsql/client` for local SQLite
+- Vitest
+- Docker
+- Vercel
