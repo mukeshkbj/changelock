@@ -30,6 +30,9 @@ const SAFE_PATTERNS: RegExp[] = [
   /^(intent id|call id|typed phrase) is required$/,
   /^consenting-contact attestation is required$/,
   /^unknown or inactive vendor code$/,
+  /^Check the new case fields and try again\.$/,
+  /^Synthetic case creation is unavailable in live mode\.$/,
+  /^Synthetic case limit reached\.$/,
 ];
 
 export function safeErrorMessage(err: unknown): string {

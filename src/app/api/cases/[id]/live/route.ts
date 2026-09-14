@@ -11,7 +11,7 @@ export async function POST(
 ): Promise<Response> {
   const { id } = await params;
   if (process.env.CHANGELOCK_MODE !== "live") {
-    return redirectToCase(req, id, "live mode is not enabled on this server");
+    return redirectToCase(id, "live mode is not enabled on this server");
   }
   const db = await getDb();
   try {
@@ -28,8 +28,8 @@ export async function POST(
       "live",
     );
     await dispatchCall(db, { intentId: intent.id });
-    return redirectToCase(req, id);
+    return redirectToCase(id);
   } catch (err) {
-    return redirectToCase(req, id, errMessage(err));
+    return redirectToCase(id, errMessage(err));
   }
 }

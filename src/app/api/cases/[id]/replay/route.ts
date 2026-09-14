@@ -23,8 +23,8 @@ export async function POST(
       preview,
     });
     await dispatchCall(db, { intentId: intent.id, scenario });
-    return redirectToCase(req, id);
+    return redirectToCase(id);
   } catch (err) {
-    return redirectToCase(req, id, errMessage(err));
+    return redirectToCase(id, errMessage(err));
   }
 }

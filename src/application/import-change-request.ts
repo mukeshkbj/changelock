@@ -31,7 +31,27 @@ export interface ImportResult {
   duplicate: boolean;
 }
 
-export async function importChangeRequest(db: Db, raw: unknown): Promise<ImportResult> {
+export interface ImportOptions {
+  // Optional per-source-system ceiling enforced atomically inside the write
+  // batch (the judge synthetic-case path uses it; ERP/seed imports omit it
+  // and stay unlimited).
+  sourceSystemLimit?: number;
+}
+
+// Thrown when a sourceSystemLimit-guarded insert no-ops: the request row
+// never landed and no existing row matches the event id.
+export class SourceSystemLimitError extends Error {
+  constructor() {
+    super("source system import limit reached");
+    this.name = "SourceSystemLimitError";
+  }
+}
+
+export async function importChangeRequest(
+  db: Db,
+  raw: unknown,
+  options: ImportOptions = {},
+): Promise<ImportResult> {
   const event = erpEventSchema.parse(raw);
   const vendor = await getVendorByCode(db, event.vendorCode);
   if (!vendor || vendor.status !== "active") {
@@ -99,10 +119,14 @@ export async function importChangeRequest(db: Db, raw: unknown): Promise<ImportR
       actor: "system",
       payload: { safeCaseCode: verificationCase.safeCaseCode, state: "needs_review" },
     },
-  ]);
+  ], options.sourceSystemLimit);
 
   const persisted = await getChangeRequestByExternalEventId(db, event.externalEventId);
-  if (!persisted) throw new Error("change request was not persisted");
+  if (!persisted) {
+    // A guarded batch no-ops when the source-system ceiling is already met.
+    if (options.sourceSystemLimit !== undefined) throw new SourceSystemLimitError();
+    throw new Error("change request was not persisted");
+  }
   const persistedCase = await getCaseByRequestId(db, persisted.id);
   if (!persistedCase) throw new Error("orphaned change request");
   return {

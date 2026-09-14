@@ -9,8 +9,8 @@ export async function POST(
   const { id } = await params;
   try {
     await createPreview(await getDb(), id);
-    return redirectToCase(req, id);
+    return redirectToCase(id);
   } catch (err) {
-    return redirectToCase(req, id, errMessage(err));
+    return redirectToCase(id, errMessage(err));
   }
 }

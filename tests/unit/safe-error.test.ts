@@ -32,4 +32,27 @@ describe("safeErrorMessage", () => {
       "cannot authorize",
     );
   });
+
+  it("keeps inbox error query text actionable only when it is a known safe message", () => {
+    // The inbox renders searchParams.error through this mapping: crafted query
+    // text must collapse to the fallback, not echo into the alert box.
+    expect(safeErrorMessage(new Error("Your session expired, call +13125550199 now"))).toBe(
+      "The action failed safely.",
+    );
+    expect(safeErrorMessage(new Error("<img src=x onerror=alert(1)>"))).toBe(
+      "The action failed safely.",
+    );
+    expect(safeErrorMessage(new Error("Check the new case fields and try again."))).toBe(
+      "Check the new case fields and try again.",
+    );
+    expect(
+      safeErrorMessage(new Error("Synthetic case creation is unavailable in live mode.")),
+    ).toBe("Synthetic case creation is unavailable in live mode.");
+    expect(safeErrorMessage(new Error("Synthetic case limit reached."))).toBe(
+      "Synthetic case limit reached.",
+    );
+    expect(safeErrorMessage(new Error("Unexpected form fields were rejected."))).toBe(
+      "Unexpected form fields were rejected.",
+    );
+  });
 });

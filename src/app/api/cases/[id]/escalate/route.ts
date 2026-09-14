@@ -14,11 +14,11 @@ export async function POST(
     const input = parseEscalateFormInput(await req.formData());
     const ownerCaseId = await getIntentCaseId(db, input.intentId);
     if (ownerCaseId && ownerCaseId !== id) {
-      return redirectToCase(req, id, "intent does not belong to this case");
+      return redirectToCase(id, "intent does not belong to this case");
     }
     await escalateToHuman(db, input);
-    return redirectToCase(req, id);
+    return redirectToCase(id);
   } catch (err) {
-    return redirectToCase(req, id, errMessage(err));
+    return redirectToCase(id, errMessage(err));
   }
 }

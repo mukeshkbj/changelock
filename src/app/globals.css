@@ -656,6 +656,81 @@ button:disabled {
   font-family: var(--mono);
 }
 
+.judge-case {
+  border: 1px solid var(--line);
+  background: var(--bg-raised);
+  border-radius: 2px;
+  margin-bottom: 20px;
+}
+
+.judge-case summary {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  padding: 10px 14px;
+  cursor: pointer;
+  min-height: 40px;
+  box-sizing: border-box;
+  align-content: center;
+  list-style: none;
+}
+
+.judge-case summary::before {
+  content: "+ ";
+  color: var(--amber);
+}
+
+.judge-case[open] summary::before {
+  content: "– ";
+}
+
+.judge-case summary::-webkit-details-marker {
+  display: none;
+}
+
+@media (hover: hover) {
+  .judge-case summary:hover {
+    color: var(--amber-ink);
+  }
+}
+
+.judge-case summary:focus-visible {
+  outline: 1px solid var(--amber);
+  outline-offset: -1px;
+}
+
+.judge-case-note {
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.judge-case-form {
+  padding: 4px 14px 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0 14px;
+  align-items: end;
+}
+
+.field select {
+  width: 100%;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 14px;
+  padding: 9px 10px;
+  border-radius: 2px;
+  min-height: 40px;
+}
+
+.field select:focus {
+  border-color: var(--amber);
+  outline: none;
+}
+
 .error-box {
   border: 1px solid var(--red);
   background: var(--red-dim);

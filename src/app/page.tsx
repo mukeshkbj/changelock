@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getDb } from "./server/get-db";
 import { listInbox } from "./server/queries";
+import { listActiveVendors } from "../infrastructure/db";
+import { safeErrorMessage } from "../application/safe-error";
 
 export const dynamic = "force-dynamic";
 
@@ -16,8 +18,14 @@ const STATE_LABEL: Record<string, string> = {
   needs_human: "Needs human",
 };
 
-export default async function InboxPage() {
-  const rows = await listInbox(await getDb());
+export default async function InboxPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+  const db = await getDb();
+  const [rows, vendors] = await Promise.all([listInbox(db), listActiveVendors(db)]);
   return (
     <main>
       <div className="inbox-head">
@@ -27,6 +35,65 @@ export default async function InboxPage() {
           resolves
         </span>
       </div>
+      {error ? (
+        <div className="error-box" role="alert">
+          {safeErrorMessage(new Error(error))}
+        </div>
+      ) : null}
+      <details className="judge-case">
+        <summary>Add synthetic test case</summary>
+        <p className="muted judge-case-note">
+          Creates a fictional replay-only case for evaluation. It cannot place a call — a real
+          call would still need the trusted vendor contact and operator authorization.
+        </p>
+        <form method="post" action="/api/cases/import" className="judge-case-form">
+          <div className="field">
+            <label htmlFor="jc-vendor">Vendor</label>
+            <select id="jc-vendor" name="vendorCode" required>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.vendorCode}>
+                  {v.displayName} ({v.vendorCode})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="jc-ref">Source reference</label>
+            <input
+              id="jc-ref"
+              name="sourceReference"
+              type="text"
+              defaultValue="VMD-DEMO-001"
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="jc-name">Request contact name</label>
+            <input
+              id="jc-name"
+              name="requestContactName"
+              type="text"
+              defaultValue="Synthetic Request Contact"
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="jc-last4">Claimed destination — last four digits</label>
+            <input
+              id="jc-last4"
+              name="lastFour"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]{4}"
+              maxLength={4}
+              required
+            />
+          </div>
+          <button type="submit" className="btn-primary">
+            Create held case
+          </button>
+        </form>
+      </details>
       {rows.length === 0 ? (
         <p className="empty-note">No change requests imported yet.</p>
       ) : (

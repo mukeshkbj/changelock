@@ -12,8 +12,8 @@ export async function POST(
   try {
     parseResetFormInput(await req.formData());
     await resetSyntheticCase(db, { caseId: id });
-    return redirectToCase(req, id);
+    return redirectToCase(id);
   } catch (err) {
-    return redirectToCase(req, id, errMessage(err));
+    return redirectToCase(id, errMessage(err));
   }
 }

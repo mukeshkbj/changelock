@@ -19,8 +19,8 @@ export async function POST(
     const provider =
       intent.providerMode === "live" ? createLiveCallProvider() : createReplayRefreshProvider(db);
     await refreshCall(db, intentId, provider);
-    return redirectToCase(req, id);
+    return redirectToCase(id);
   } catch (err) {
-    return redirectToCase(req, id, errMessage(err));
+    return redirectToCase(id, errMessage(err));
   }
 }

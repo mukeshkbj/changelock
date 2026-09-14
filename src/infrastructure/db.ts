@@ -309,6 +309,16 @@ export async function getVendor(db: Db, id: string): Promise<Vendor | null> {
   return r ? toVendor(r) : null;
 }
 
+// Vendor pick-list for the judge "add synthetic case" form: id, display name,
+// and code only — never trusted contacts or phone numbers.
+export async function listActiveVendors(db: Db): Promise<Vendor[]> {
+  const rows = await all(
+    db,
+    `SELECT ${VENDOR_COLS} FROM vendors WHERE status = 'active' ORDER BY display_name`,
+  );
+  return rows.map(toVendor);
+}
+
 export async function insertVendor(db: Db, v: Vendor): Promise<void> {
   await db.execute({
     sql: "INSERT INTO vendors (id, display_name, vendor_code, status) VALUES (?,?,?,?)",
@@ -400,7 +410,11 @@ function toChangeRequest(r: Record<string, unknown>): ChangeRequest {
 //
 // Concurrency semantics: every statement is self-guarding, so two racing
 // initializers can run the identical batch and the loser's batch no-ops —
-//   request: INSERT OR IGNORE on unique external_event_id
+//   request: INSERT OR IGNORE on unique external_event_id; when
+//            sourceSystemLimit is set the insert also requires the count of
+//            requests sharing this source_system to be below the limit,
+//            evaluated inside the same atomic batch so a burst of concurrent
+//            inserts cannot overshoot the ceiling
 //   case:    inserted only if this request has no case yet
 //   audits:  inserted only if OUR case row exists (they key off the generated
 //            case id, so a loser whose case insert was skipped writes nothing)
@@ -411,21 +425,33 @@ export async function insertImportBundle(
   request: ChangeRequest,
   kase: VerificationCase,
   auditInputs: { type: string; actor: string; payload: Record<string, unknown> }[],
+  sourceSystemLimit?: number,
 ): Promise<void> {
+  const requestArgs = [
+    request.id, request.externalEventId, request.vendorId, request.requestedAt,
+    request.sourceSystem, request.sourceReference, request.requestContactName,
+    request.requestContactPhoneMasked, request.newDestinationLabel,
+    request.changeFingerprint,
+  ];
   const stmts: DbStatement[] = [
-    {
-      sql: `INSERT OR IGNORE INTO change_requests
-       (id, external_event_id, vendor_id, requested_at, source_system, source_reference,
-        request_contact_name, request_contact_phone_masked, new_destination_label,
-        change_fingerprint, status)
-       VALUES (?,?,?,?,?,?,?,?,?,?,'held')`,
-      args: [
-        request.id, request.externalEventId, request.vendorId, request.requestedAt,
-        request.sourceSystem, request.sourceReference, request.requestContactName,
-        request.requestContactPhoneMasked, request.newDestinationLabel,
-        request.changeFingerprint,
-      ],
-    },
+    sourceSystemLimit === undefined
+      ? {
+          sql: `INSERT OR IGNORE INTO change_requests
+           (id, external_event_id, vendor_id, requested_at, source_system, source_reference,
+            request_contact_name, request_contact_phone_masked, new_destination_label,
+            change_fingerprint, status)
+           VALUES (?,?,?,?,?,?,?,?,?,?,'held')`,
+          args: requestArgs,
+        }
+      : {
+          sql: `INSERT OR IGNORE INTO change_requests
+           (id, external_event_id, vendor_id, requested_at, source_system, source_reference,
+            request_contact_name, request_contact_phone_masked, new_destination_label,
+            change_fingerprint, status)
+           SELECT ?,?,?,?,?,?,?,?,?,?,'held'
+           WHERE (SELECT COUNT(*) FROM change_requests WHERE source_system = ?) < ?`,
+          args: [...requestArgs, request.sourceSystem, sourceSystemLimit],
+        },
     {
       sql: `INSERT INTO verification_cases
        (id, change_request_id, state, safe_case_code, current_intent_id, created_at, updated_at)

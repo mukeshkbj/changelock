@@ -10,6 +10,7 @@ import { createPreview } from "../../src/application/create-preview";
 import { authorizeIntent } from "../../src/application/authorize-intent";
 import { dispatchCall } from "../../src/application/dispatch-call";
 import { resetSyntheticCase } from "../../src/application/reset-synthetic-case";
+import { createJudgeCase } from "../../src/application/create-judge-case";
 
 let dir: string;
 let dbPath: string;
@@ -192,5 +193,63 @@ describe("concurrent initialization on a shared database file", () => {
       args: [verificationCase.id],
     });
     expect(audits.rows.map((r) => r.type)).toEqual(["demo.reset"]);
+  });
+
+  it("55 concurrent judge creations across two clients: exactly 50 persist, 5 hit the limit", async () => {
+    const a = await track();
+    await seedFixtures(a);
+    const b = await track();
+    await seedFixtures(b);
+
+    const results = await Promise.allSettled(
+      Array.from({ length: 55 }, (_, i) =>
+        createJudgeCase(i % 2 === 0 ? a : b, {
+          vendorCode: "V-1002",
+          sourceReference: `VMD-CONC-${i}`,
+          requestContactName: "Judge Operator",
+          lastFour: "4410",
+        }),
+      ),
+    );
+
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    const rejected = results.filter(
+      (r): r is PromiseRejectedResult => r.status === "rejected",
+    );
+    expect(fulfilled).toHaveLength(50);
+    expect(rejected).toHaveLength(5);
+    for (const r of rejected) {
+      expect(r.reason).toBeInstanceOf(Error);
+      expect(r.reason.message).toBe("Synthetic case limit reached.");
+    }
+    // Every fulfilled creation resolves to a distinct persisted case.
+    expect(new Set(fulfilled.map((r) => r.value)).size).toBe(50);
+
+    const requests = await a.execute(
+      "SELECT COUNT(*) c FROM change_requests WHERE source_system = 'judge_manual'",
+    );
+    const cases = await a.execute(
+      `SELECT COUNT(*) c FROM verification_cases vc
+       JOIN change_requests cr ON cr.id = vc.change_request_id
+       WHERE cr.source_system = 'judge_manual'`,
+    );
+    const audits = await a.execute(
+      `SELECT COUNT(*) c, COUNT(DISTINCT ae.id) d FROM audit_events ae
+       JOIN verification_cases vc ON vc.id = ae.case_id
+       JOIN change_requests cr ON cr.id = vc.change_request_id
+       WHERE cr.source_system = 'judge_manual'`,
+    );
+    // No orphaned cases: every judge case is backed by its request row.
+    const orphans = await a.execute(
+      `SELECT COUNT(*) c FROM verification_cases vc
+       LEFT JOIN change_requests cr ON cr.id = vc.change_request_id
+       WHERE cr.id IS NULL`,
+    );
+    expect(requests.rows[0].c).toBe(50);
+    expect(cases.rows[0].c).toBe(50);
+    // Exactly one two-event audit chain per case — no duplicated chains.
+    expect(audits.rows[0].c).toBe(100);
+    expect(audits.rows[0].d).toBe(100);
+    expect(orphans.rows[0].c).toBe(0);
   });
 });
