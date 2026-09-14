@@ -78,7 +78,7 @@ done
 SRT_WIN=$SRT
 command -v cygpath >/dev/null 2>&1 && SRT_WIN=$(cygpath -m "$SRT")
 SRT_ESC=$(printf '%s' "$SRT_WIN" | sed 's/\\/\\\\/g; s/:/\\:/g')
-VF+="[vxf]subtitles='$SRT_ESC':force_style='FontName=Segoe UI,FontSize=21,PrimaryColour=&H00FFFFFF,BorderStyle=3,BackColour=&HA0000000,Outline=0,Shadow=0,MarginV=26,Alignment=2'[vout]"
+VF+="[vxf]subtitles='$SRT_ESC':force_style='FontName=Segoe UI,FontSize=21,PrimaryColour=&H00FFFFFF,BorderStyle=3,BackColour=&HA0000000,Outline=10,Shadow=0,MarginV=26,Alignment=2'[vout]"
 
 # Audio: delay each narration WAV to its shot start, mix, normalize. Same T_i
 # convention as the xfade chain above.
