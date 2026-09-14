@@ -7,3 +7,7 @@ data/
 *.tsbuildinfo
 next-env.d.ts
 submission/video/*.mp4
+.vercel/
+.agents/
+.claude/
+skills-lock.json
