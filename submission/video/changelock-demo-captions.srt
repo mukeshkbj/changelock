@@ -1,0 +1,178 @@
+1
+00:00:01,000 --> 00:00:04,800
+This is ChangeLock — a verification checkpoint
+for vendor bank-detail changes.
+
+2
+00:00:04,800 --> 00:00:08,600
+Everything you are about to see
+is deterministic replay.
+
+3
+00:00:08,600 --> 00:00:12,350
+No live calls are placed,
+and none are claimed.
+
+4
+00:00:13,950 --> 00:00:17,500
+Four vendor payment-change requests
+sit in the inbox.
+
+5
+00:00:17,500 --> 00:00:20,000
+Every one of them is held —
+
+6
+00:00:20,000 --> 00:00:24,120
+ChangeLock can never approve a payment change,
+only verify the story behind it.
+
+7
+00:00:25,120 --> 00:00:29,500
+Open the Northstar case,
+and the trust rail tells the whole story.
+
+8
+00:00:29,500 --> 00:00:34,500
+On the left, the untrusted request —
+the name and number inside the request itself,
+
+9
+00:00:34,500 --> 00:00:38,000
+treated as attacker-controlled,
+masked, and never dialed.
+
+10
+00:00:38,000 --> 00:00:43,000
+In the middle, the independent callback —
+the trusted contact already in the vendor master.
+
+11
+00:00:43,000 --> 00:00:46,500
+That is the only number
+ChangeLock will ever call.
+
+12
+00:00:46,500 --> 00:00:51,630
+On the right, evidence only —
+whatever the call learns, the payment stays held.
+
+13
+00:00:52,630 --> 00:00:55,500
+The call itself is a bounded contract.
+
+14
+00:00:55,500 --> 00:01:00,000
+An automation disclosure up front.
+One question: did you request this change.
+
+15
+00:01:00,000 --> 00:01:04,500
+No bank details. No credentials.
+No one-time passcodes.
+
+16
+00:01:04,500 --> 00:01:06,800
+It stops on refusal.
+
+17
+00:01:06,800 --> 00:01:09,500
+And it closes with the line that matters:
+
+18
+00:01:09,500 --> 00:01:12,650
+this call does not approve anything.
+
+19
+00:01:13,650 --> 00:01:16,500
+Before anything runs,
+a human authorizes it.
+
+20
+00:01:16,500 --> 00:01:24,060
+The operator picks the scenario, types the case
+verification phrase, and attests the contact consented.
+
+21
+00:01:25,060 --> 00:01:30,000
+Here the replay comes back denied —
+the vendor says they never asked for this change.
+
+22
+00:01:30,000 --> 00:01:33,500
+The denial is recorded as evidence,
+bound to this request.
+
+23
+00:01:33,500 --> 00:01:36,200
+And the payment change stays held.
+
+24
+00:01:36,200 --> 00:01:39,330
+An analyst now has proof, not a hunch.
+
+25
+00:01:40,330 --> 00:01:48,500
+Every result must pass binding gates: same call, same
+intent, same request hash, same trusted destination.
+
+26
+00:01:48,500 --> 00:01:54,690
+If any gate fails, the result is rejected
+and the case fails closed.
+
+27
+00:01:55,690 --> 00:01:59,000
+On a second case, the replay
+comes back confirmed.
+
+28
+00:01:59,000 --> 00:02:02,000
+Green evidence — the vendor did request it.
+
+29
+00:02:02,000 --> 00:02:05,500
+And notice: the payment change is still held.
+
+30
+00:02:05,500 --> 00:02:10,580
+Confirmed is evidence, not approval.
+A human decides what happens next.
+
+31
+00:02:11,580 --> 00:02:17,500
+And when verification cannot complete — unreachable,
+malformed, ambiguous — ChangeLock fails closed.
+
+32
+00:02:17,500 --> 00:02:22,500
+In our own local live test, one real authorized call
+was placed to a consented test contact.
+
+33
+00:02:22,500 --> 00:02:24,700
+It reached no answer.
+
+34
+00:02:24,700 --> 00:02:29,840
+No answer is not proof either way.
+The request stayed held.
+
+35
+00:02:30,840 --> 00:02:38,980
+Behind it all, a hash-linked audit timeline records
+every action, every gate, every masked number.
+
+36
+00:02:41,680 --> 00:02:46,500
+One bounded question, to the number
+you already trusted —
+
+37
+00:02:46,500 --> 00:02:49,500
+producing evidence a human can act on.
+
+38
+00:02:49,500 --> 00:02:54,040
+The call auditors keep telling companies to make —
+finally enforced by the system itself.
